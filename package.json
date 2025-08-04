@@ -1,0 +1,21 @@
+{
+  "name": "petite-vue-pico",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "glogin": "clasp login",
+    "glogout": "clasp logout",
+    "clone": "clasp clone 15vSlgNNFmATVQnpM_FwLCjSBTxil3tofunIkTCZd2WSuxV4fci9ZMqmW --rootDir ./src",
+    "start": "clasp push --watch",
+    "pull": "clasp pull"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@google/clasp": "^3.0.6-alpha",
+    "@types/google-apps-script": "^1.0.99"
+  }
+}

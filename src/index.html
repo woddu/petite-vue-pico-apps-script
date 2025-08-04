@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    >
+    <script type="module">
+        import { createApp, reactive } from 'https://unpkg.com/petite-vue?module'
+
+        const columns = [
+            'description',
+            'code',
+            'size',
+            'color',
+            'quantity',
+            'sold',
+            'remarks',
+            'date'
+        ];
+
+        const state = reactive({
+            isLoading: true,
+            data: []
+        });
+
+        google.script.run
+            .withSuccessHandler((incomingData) => {
+                const fresh = JSON.parse(incomingData)          
+                state.data.splice(0, state.data.length, ...fresh)
+                state.isLoading = false;
+            })
+            .withFailureHandler((error) => {
+                console.error('Error fetching data:', error);
+            })
+            .getData();
+        createApp({
+            state,
+            page_size: 4,
+            page_number: 1,
+            last_page: 0,
+            query: '',
+            columns,
+            sortKey: '',
+            sortOrders: columns.reduce((o, key) => ((o[key] = 1), o), {}),
+
+            get filteredData() {
+                const sortKey = this.sortKey
+                const filterKey = this.query && this.query.toLowerCase()
+                const order = this.sortOrders[sortKey] || 1
+                let data = state.data
+                if (filterKey) {
+                    data = data.filter((row) => {
+                        return Object.keys(row).some((key) => {
+                            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                        })
+                    })
+                }
+                if (sortKey) {
+                    data = data.slice().sort((a, b) => {
+                        a = a[sortKey]
+                        b = b[sortKey]
+                        return (a === b ? 0 : a > b ? 1 : -1) * order
+                    })
+                }
+                this.last_page = Math.ceil(data.length / this.page_size)
+                return data.slice((this.page_number - 1) * this.page_size, this.page_number * this.page_size);
+            },
+
+
+            sortBy(key) {
+                this.sortKey = key
+                this.sortOrders[key] = this.sortOrders[key] * -1
+            },
+
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1)
+            },
+
+            dateFormat(dateString) {
+                const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+                return new Date(dateString).toLocaleDateString(undefined, options);
+            }
+
+        }).mount()
+    </script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li>
+                    <h1>
+                        Inventory test
+                    </h1>
+                </li>
+            </ul>
+        </nav>
+        <hr/>
+    </header>
+    <main v-scope class="container">
+        <input role="search" type="search" name="query" v-model="query" placeholder="Search" />
+        <div class="overflow-auto">
+            <table >
+                <thead>
+                    <tr>
+                        <th v-for="column in columns" :key="column">{{ capitalize(column) }}</th>
+                    </tr>
+                </thead>
+                <tbody v-if="state.isLoading">
+                    <tr>
+                        <td colspan="8">Loading...</td>
+                    </tr>
+                </tbody>
+                <tbody v-else-if="filteredData.length > 0">
+                    <tr v-for="item in filteredData" :key="item.id">
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.code }}</td>
+                        <td>{{ item.size }}</td>
+                        <td>{{ item.color }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.sold }}</td>
+                        <td>{{ item.remarks }}</td>
+                        <td>{{ dateFormat(item.date) }}</td>
+                    </tr>
+                </tbody>
+            
+                <tbody v-else>
+                    <tr>
+                        <td colspan="8">No data available</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav>
+            <ul role="group">
+                <li>Page: {{page_number}}</li>
+                <li>Last: {{last_page}}</li>
+            </ul>
+            <div role="group">
+                <button v-for="page in last_page" @click="page_number = page"
+                    :class="{'secondary': page_number != page}">
+                    {{page}}
+                </button>
+            </div>
+        </nav>
+
+        <button data-target="modal" onclick="toggleModal(event)">
+            Open Modal
+        </button>
+    </main>
+    <dialog id="modal">
+        <article>
+            <hgroup>
+                <h1>This is the Modal</h1>
+            </hgroup>
+        </article>
+    </dialog>
+    <script>
+        // Config
+        const isOpenClass = "modal-is-open";
+        const openingClass = "modal-is-opening";
+        const closingClass = "modal-is-closing";
+        const scrollbarWidthCssVar = "--pico-scrollbar-width";
+        const animationDuration = 400; // ms
+        let visibleModal = null;
+
+        // Toggle modal
+        const toggleModal = (event) => {
+        event.preventDefault();
+        const modal = document.getElementById(event.currentTarget.dataset.target);
+        if (!modal) return;
+        modal && (modal.open ? closeModal(modal) : openModal(modal));
+        };
+
+        // Open modal
+        const openModal = (modal) => {
+        const { documentElement: html } = document;
+        const scrollbarWidth = getScrollbarWidth();
+        if (scrollbarWidth) {
+            html.style.setProperty(scrollbarWidthCssVar, `${scrollbarWidth}px`);
+        }
+        html.classList.add(isOpenClass, openingClass);
+        setTimeout(() => {
+            visibleModal = modal;
+            html.classList.remove(openingClass);
+        }, animationDuration);
+        modal.showModal();
+        };
+
+        // Close modal
+        const closeModal = (modal) => {
+        visibleModal = null;
+        const { documentElement: html } = document;
+        html.classList.add(closingClass);
+        setTimeout(() => {
+            html.classList.remove(closingClass, isOpenClass);
+            html.style.removeProperty(scrollbarWidthCssVar);
+            modal.close();
+        }, animationDuration);
+        };
+
+        // Close with a click outside
+        document.addEventListener("click", (event) => {
+        if (visibleModal === null) return;
+        const modalContent = visibleModal.querySelector("article");
+        const isClickInside = modalContent.contains(event.target);
+        !isClickInside && closeModal(visibleModal);
+        });
+
+        // Close with Esc key
+        document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && visibleModal) {
+            closeModal(visibleModal);
+        }
+        });
+
+        // Get scrollbar width
+        const getScrollbarWidth = () => {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        return scrollbarWidth;
+        };
+
+        // Is scrollbar visible
+        const isScrollbarVisible = () => {
+        return document.body.scrollHeight > screen.height;
+        };
+    </script>
+</body>
+</html>
