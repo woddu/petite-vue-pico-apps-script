@@ -24,7 +24,19 @@
 
         const state = reactive({
             isLoading: true,
+            isEditing: false,
             data: []
+        });
+
+        const item = reactive({
+            description: "",
+            code: "",
+            size: "",
+            color: "",
+            quantity: 0,
+            sold: 0,
+            remarks: "",
+            date: ""
         });
 
         google.script.run
@@ -37,8 +49,10 @@
                 console.error('Error fetching data:', error);
             })
             .getData();
+            
         createApp({
             state,
+            item,
             page_size: 4,
             page_number: 1,
             last_page: 0,
@@ -102,7 +116,12 @@
         <hr/>
     </header>
     <main v-scope class="container">
-        <input role="search" type="search" name="query" v-model="query" placeholder="Search" />
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+            <input role="search" type="search" name="query" v-model="query" placeholder="Search" />
+            <button style="flex-shrink: 0; margin-bottom: 1rem;" data-target="modal" onclick="toggleModal(event)">
+                Add Item
+            </button>
+        </div>
         <div class="overflow-auto">
             <table >
                 <thead>
@@ -134,6 +153,7 @@
                     </tr>
                 </tbody>
             </table>
+            <progress v-if="state.isLoading"/>
         </div>
         <nav>
             <ul role="group">
@@ -147,18 +167,53 @@
                 </button>
             </div>
         </nav>
-
-        <button data-target="modal" onclick="toggleModal(event)">
-            Open Modal
-        </button>
+    
+        <dialog id="modal">
+            <article>
+                <hgroup>
+                    <header>
+                        <h2>
+                            Add Item
+                            <hr/>
+                        </h2>
+                    </header>
+                    <form action="">
+                        <fieldset class="grid">
+                            <label for="description">Description
+                                <input type="text" name="description" v-model="item.description">
+                            </label>
+                            <label for="code">Code
+                                <input type="text" name="code" v-model="item.code">
+                            </label>
+                            <label for="size">Size
+                                <input type="text" name="size" v-model="item.size">
+                            </label>
+                        </fieldset>
+                        <fieldset class="grid">
+                            <label for="color">Color
+                                <input type="text" name="color" v-model="item.color">
+                            </label>
+                            <label for="quantity">Quantity
+                                <input type="number" name="quantity" v-model="item.quantity">
+                            </label>
+                            <label for="sold">Sold
+                                <input type="number" name="sold" v-model="item.sold">
+                            </label>
+                        </fieldset>
+                        <fieldset class="grid">
+                            <label for="remarks">Remarks
+                                <input type="text" name="remarks" v-model="item.remarks">
+                            </label>
+                            <label for="date">Date
+                                <input type="date" name="date" v-model="item.date">
+                            </label>
+                        </fieldset>
+                        <input type="submit" value="Add Item" @click.prevent="submit">
+                    </form>
+                </hgroup>
+            </article>
+        </dialog>
     </main>
-    <dialog id="modal">
-        <article>
-            <hgroup>
-                <h1>This is the Modal</h1>
-            </hgroup>
-        </article>
-    </dialog>
     <script>
         // Config
         const isOpenClass = "modal-is-open";
