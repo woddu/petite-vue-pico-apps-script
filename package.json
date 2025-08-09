@@ -8,7 +8,8 @@
     "glogout": "clasp logout",
     "clone": "clasp clone 15vSlgNNFmATVQnpM_FwLCjSBTxil3tofunIkTCZd2WSuxV4fci9ZMqmW --rootDir ./src",
     "start": "clasp push --watch",
-    "pull": "clasp pull"
+    "pull": "clasp pull",
+    "push": "clasp push"
   },
   "keywords": [],
   "author": "",
