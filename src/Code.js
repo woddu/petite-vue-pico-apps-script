@@ -7,7 +7,6 @@ function myData(){
 }
 
 function getData(){
-  const sheet = mySheet();
 
   const values = myData()
 
@@ -24,6 +23,31 @@ function getData(){
   }
 
   return JSON.stringify(output)
+}
+
+function addData(data) {
+  const sheet = mySheet();
+
+  const headers = myData()[0]
+
+  const idColumnIndex = headers.indexOf('id');
+  let nextId = 1;
+
+  if (idColumnIndex !== -1) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const lastId = sheet.getRange(lastRow, idColumnIndex + 1).getValue();
+      nextId = (typeof lastId === 'number' && !isNaN(lastId)) ? lastId + 1 : 1;
+    }
+  }
+
+  const row = headers.map(header => {
+    if (header === 'id') return nextId;
+    return data[header] || '';
+  });
+
+  sheet.appendRow(row);
+  return row
 }
 
 function doGet() {
